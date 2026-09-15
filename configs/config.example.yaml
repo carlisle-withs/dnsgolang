@@ -1,0 +1,16 @@
+# 配置样例。实际值全部通过 DNSSS_* 环境变量注入(零硬编码凭据),
+# 本文件仅作字段说明,见附录《环境变量速查》。
+#
+# DNSSS_LISTEN=:8000
+# DNSSS_DB_DSN=root:pass@tcp(127.0.0.1:3306)/dnsss?parseTime=true&loc=Local   # 必填
+# DNSSS_REDIS_ADDR=127.0.0.1:6379
+# DNSSS_REDIS_PASSWORD=
+# DNSSS_JWT_SECRET=<至少32字符随机串>                                          # 必填
+# DNSSS_JWT_TTL_HOURS=24
+# DNSSS_JWT_REFRESH_DAYS=7
+# DNSSS_ADMIN_PASSWORD=<种子 admin 初始密码>                                   # make seed 必填
+# DNSSS_BATCH_CONCURRENCY=256
+# DNSSS_BATCH_FLUSH_SIZE=200
+# DNSSS_SINGLE_EXECUTION_MODE=auto          # auto | local | remote
+# DNSSS_CORS_ORIGINS=http://localhost:5173
+# DNSSS_STATIC_DIR=./frontend/dist
