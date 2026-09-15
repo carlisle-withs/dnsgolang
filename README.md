@@ -13,7 +13,8 @@
 | P3 | HTTP(httptrace 四段计时)+ PING(pro-bing 原生 ICMP,特权→非特权降级)+ MTR/Traceroute(exec 系统命令 + 输出解析);五协议 detail 契约字段 | ✅ |
 | P4 | Asynq 队列(default/netprobe)+ 独立 worker 二进制;批量创建(multipart + normalizer)+ goroutine 池执行引擎(256 并发/200 条缓冲落库/stop 语义);批量全套接口(列表/详情/结果分页/单条/停止/重跑);日聚合定时任务 | ✅ |
 | P5 | risk-board 五接口(meta/overview/globe-layers/node-distribution/batch-risk-overview,30s 缓存)+ passive-alerts(preset 演示数据 + 空骨架) | ✅ |
-| P6-P9 | 可信库、扫描器、MQTT 探针、报告 | ⬜ |
+| P6 | dnsrisk 可信库:domains/hosts CRUD+分页(ids_only/无分页/分页三形态)、import-manifest(JSON/YAML 子集,apex 自动补齐+升级式 upsert)、discover-candidates(apex/NS/子域三类查询计划,NS 主机自动扩散)、候选审批(单机/批量,diffStatus 状态机,baseline 重建)、baseline/snapshots 接口、build-jobs(异步分片+进度+断点 retry) | ✅ |
+| P7-P9 | 扫描器、MQTT 探针、报告 | ⬜ |
 
 ## 快速开始
 
@@ -91,6 +92,16 @@ scripts/loadtest/      压测工具(2.10 口径:创建/执行/吞吐分档)
 - **30s 缓存**:冷查询 15ms → 命中 0.4ms
 - **passive-alerts**:`?preset=public` 返回 6 条演示数据(类型/时间线/榜单/分页齐全);无 preset 返回空骨架
 - 已知边界:globe 的 arcs/hotspots 需目标 IP 地理坐标(IP2Location BIN,P9 geoip 接入),当前返回空数组——前端空态渲染正常
+
+## P6 验收记录(方案 Phase 6:导入→发现→审批→baseline 就位)
+
+- **导入**:3 域名 JSON manifest → 3 域名 + 4 主机(www + apex 自动补齐),upsert 计数正确
+- **发现**:5 主机处理(含 NS 主机自动扩散 ns1.example.test)、10 条候选(dig 行解析入三 section)
+- **审批**:单机 approve → 4 条 baseline 就位、host 转 trusted;bulk-approve → 4 主机 6 记录、批次转 approved
+- **diff 状态机**:重新发现后 baseline 命中显示 `unchanged`,移除记录显示 `removed`
+- **build-jobs**:2 域名 chunk=1 → 进度 2/2=100%、trusted_hosts=7;文件缺失 → failed + last_error;retry 断点续跑幂等
+- 候选记录唯一键采用 rr_hash(sha256) 列规避 utf8mb4 索引 3072 字节上限
+- dns-trust 全部接口要求登录(安全修复项,原系统部分匿名可写)
 
 ## 契约回归要点(11.5 已落地项)
 

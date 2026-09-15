@@ -61,6 +61,7 @@ func (a *API) Router() *gin.Engine {
 		a.registerBatchRoutes(netprobe)
 		a.registerRiskBoardRoutes(netprobe)
 	}
+	a.registerTrustRoutes(r)
 	return r
 }
 
