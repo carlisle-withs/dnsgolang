@@ -19,6 +19,7 @@ import (
 	"gorm.io/gorm"
 
 	"dnsss/internal/auth"
+	"dnsss/internal/bridge"
 	"dnsss/internal/config"
 	"dnsss/internal/database"
 	"dnsss/internal/httpapi"
@@ -78,6 +79,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go svc.ScheduleLoop(ctx)
+
+	// MQTT bridge(配置了 broker 时启用;worker 侧同样启动,结果回填幂等)
+	if cfg.MQTTBroker != "" {
+		b := bridge.New(cfg, db, svc)
+		if err := b.Start(ctx); err != nil {
+			slog.Error("MQTT bridge 启动失败", "error", err)
+		} else {
+			svc.SetRemotePublisher(b)
+		}
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.Listen,

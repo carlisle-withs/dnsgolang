@@ -17,6 +17,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 
+	"dnsss/internal/bridge"
 	"dnsss/internal/config"
 	"dnsss/internal/dto"
 	"dnsss/internal/engine/prober"
@@ -51,10 +52,11 @@ func jsonUnmarshalDefault(s string, v any) error {
 
 // Service 任务编排服务。
 type Service struct {
-	gorm  *gorm.DB
-	cfg   *config.Config
-	pool  chan struct{}
-	wg    sync.WaitGroup
+	gorm   *gorm.DB
+	cfg    *config.Config
+	pool   chan struct{}
+	wg     sync.WaitGroup
+	remote bridge.RemotePublisher // MQTT 发布(bridge 就绪后注入)
 }
 
 func New(db *gorm.DB, cfg *config.Config) *Service {
@@ -316,17 +318,20 @@ func (s *Service) RunSingleExecution(ctx context.Context, executionID uint64) er
 		}
 		s.gorm.WithContext(ctx).Model(&model.ExecutionRegion{}).Where("id = ?", row.ID).Updates(updates)
 
-		var result prober.Result
 		if row.NodeTransport == model.NodeTransportMQTT {
-			// 远程探针:Phase 8 接入 MQTT bridge 前统一落 agent_unavailable
-			result = prober.Result{
+			// 远程探针:在线则经 MQTT 派发(结果由 bridge 回填);否则落 agent_unavailable
+			if s.dispatchSingleToAgent(ctx, row, &task) {
+				continue
+			}
+			result := prober.Result{
 				Success: false, Status: "failed",
 				ErrorCode: "agent_unavailable", ErrorMessage: "远程探针不可用",
 				Detail: map[string]any{}, RawPayload: map[string]any{},
 			}
-		} else {
-			result = s.executeProtocol(ctx, &task, row)
+			s.persistRegionResult(ctx, row, task.Protocol, result)
+			continue
 		}
+		result := s.executeProtocol(ctx, &task, row)
 		s.persistRegionResult(ctx, row, task.Protocol, result)
 	}
 	return s.refreshExecutionStatus(ctx, executionID)

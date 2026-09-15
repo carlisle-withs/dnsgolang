@@ -26,6 +26,12 @@ type Config struct {
 
 	StaticDir string
 	CORSOrigins []string
+
+	MQTTBroker    string
+	MQTTUsername  string
+	MQTTPassword  string
+	ProbeToken    string
+	ProbeLeaseSeconds int
 }
 
 func getenv(key, fallback string) string {
@@ -59,6 +65,11 @@ func Load() (*Config, error) {
 		SingleExecutionMode:   getenv("DNSSS_SINGLE_EXECUTION_MODE", "auto"),
 		StaticDir:             os.Getenv("DNSSS_STATIC_DIR"),
 		CORSOrigins:           splitList(getenv("DNSSS_CORS_ORIGINS", "http://localhost:5173")),
+		MQTTBroker:            getenv("DNSSS_MQTT_BROKER", ""),
+		MQTTUsername:          getenv("DNSSS_MQTT_USERNAME", ""),
+		MQTTPassword:          getenv("DNSSS_MQTT_PASSWORD", ""),
+		ProbeToken:            getenv("DNSSS_PROBE_TOKEN", ""),
+		ProbeLeaseSeconds:     getenvInt("DNSSS_PROBE_LEASE_SECONDS", 180),
 	}
 	if cfg.DBDSN == "" {
 		return nil, fmt.Errorf("缺少必填环境变量 DNSSS_DB_DSN")

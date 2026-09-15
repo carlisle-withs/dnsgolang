@@ -39,6 +39,7 @@ func (a *API) Router() *gin.Engine {
 	r.GET("/healthz", func(c *gin.Context) {
 		dto.OK(c, gin.H{"status": "ok"})
 	})
+	r.POST("/api/probe-agents/register", a.probeAgentRegister)
 
 	oauth := r.Group("/api/oauth")
 	{
@@ -50,6 +51,10 @@ func (a *API) Router() *gin.Engine {
 	netprobe := r.Group("/api/netprobe")
 	{
 		netprobe.GET("/meta", a.meta)
+		netprobe.GET("/agents", a.probeAgentList)
+		netprobe.GET("/agents/:id", a.probeAgentDetail)
+		netprobe.PATCH("/agents/:id", a.probeAgentUpdate)
+		netprobe.PUT("/agents/:id", a.probeAgentUpdate)
 		netprobe.GET("/tasks", a.listTasks)
 		netprobe.POST("/tasks", a.createTask)
 		netprobe.GET("/tasks/:id", a.getTask)
@@ -59,6 +64,7 @@ func (a *API) Router() *gin.Engine {
 		netprobe.GET("/tasks/:id/executions", a.taskExecutions)
 		netprobe.GET("/executions/:id", a.executionDetail)
 		a.registerBatchRoutes(netprobe)
+		netprobe.GET("/batch/executions/:id/export", a.batchExportXLSX)
 		a.registerRiskBoardRoutes(netprobe)
 	}
 	a.registerTrustRoutes(r)

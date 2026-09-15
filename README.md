@@ -14,7 +14,9 @@
 | P4 | Asynq 队列(default/netprobe)+ 独立 worker 二进制;批量创建(multipart + normalizer)+ goroutine 池执行引擎(256 并发/200 条缓冲落库/stop 语义);批量全套接口(列表/详情/结果分页/单条/停止/重跑);日聚合定时任务 | ✅ |
 | P5 | risk-board 五接口(meta/overview/globe-layers/node-distribution/batch-risk-overview,30s 缓存)+ passive-alerts(preset 演示数据 + 空骨架) | ✅ |
 | P6 | dnsrisk 可信库:domains/hosts CRUD+分页(ids_only/无分页/分页三形态)、import-manifest(JSON/YAML 子集,apex 自动补齐+升级式 upsert)、discover-candidates(apex/NS/子域三类查询计划,NS 主机自动扩散)、候选审批(单机/批量,diffStatus 状态机,baseline 重建)、baseline/snapshots 接口、build-jobs(异步分片+进度+断点 retry) | ✅ |
-| P7-P9 | 扫描器、MQTT 探针、报告 | ⬜ |
+| P7 | 扫描器:6 方法/14 风险判定引擎(规则与原版逐条对齐,含负例措辞)、scan-jobs 全套(创建/详情/结果/停止)、verdicts upsert(host×risk_type)、观测快照三表、ownership-kpis、monitor-profiles + 每分钟调度、set-analysis(并/交/差/补集) | ✅ |
+| P8 | MQTT 探针:bridge(发布/消费/LWT/租约重投)、agent 二进制(注册/心跳/作业执行/QoS1 去重)、probe-agents/register(共享 token/mTLS)、agents 管理接口 | ✅ |
+| P9 | PDF 扫描报告(UTF-8 中文字体嵌入,五章节)、XLSX 批量导出 | ✅ |
 
 ## 快速开始
 
@@ -102,6 +104,13 @@ scripts/loadtest/      压测工具(2.10 口径:创建/执行/吞吐分档)
 - **build-jobs**:2 域名 chunk=1 → 进度 2/2=100%、trusted_hosts=7;文件缺失 → failed + last_error;retry 断点续跑幂等
 - 候选记录唯一键采用 rr_hash(sha256) 列规避 utf8mb4 索引 3072 字节上限
 - dns-trust 全部接口要求登录(安全修复项,原系统部分匿名可写)
+
+## P7-P9 验收记录
+
+- **P7 判定引擎**:resolver 指向不可达端口 → 3 主机全部 suspicious(no_service + record_deletion,severity=high/confidence=high_confidence);verdicts 14 条含负例("未发现 AXFR 暴露风险"等措辞与原版一致);KPI 齐全;set-analysis union 生效
+- **P8 探针闭环**:注册(broker/topics 下发)→ north 地区远程拨测经 MQTT 派发 → agent 执行 → 结果回填 → "全部地区拨测成功"(answers 为 dig 格式);kill -9 掉线 → LWT offline;掉线后任务 → agent_unavailable/远程探针不可用
+- **P9 报告**:PDF 18KB 五章节(任务信息/KPI/风险分布/可疑明细/方法统计),pdftotext 验证中文全渲染;XLSX 导出 100 行结果(file 命令验证为合法 Excel 2007+)
+- **修复的坑**:fpdf AddFont 需 MakeFont 度量而非裸 TTF(改 AddUTF8FontFromBytes);MySQL 容器 UTC 时区 NOW() 与 Go 本地时间混用导致探针心跳偏 8h 被误判离线(统一 Go 侧时间戳);节点编码(probe-\<code\>)与探针编码(\<code\>)派发时需经 node.agent_ref 关联
 
 ## 契约回归要点(11.5 已落地项)
 

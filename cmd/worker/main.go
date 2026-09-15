@@ -15,6 +15,7 @@ import (
 
 	"github.com/robfig/cron/v3"
 
+	"dnsss/internal/bridge"
 	"dnsss/internal/config"
 	"dnsss/internal/database"
 	"dnsss/internal/queue"
@@ -86,6 +87,15 @@ func main() {
 
 	// 周期调度(Celery beat 等价):每日 00:10 日聚合;每 5 分钟心跳本地节点
 	cronSchedule := cron.New()
+	// MQTT bridge:批量/单次远程派发的发布与结果回填
+	if cfg.MQTTBroker != "" {
+		b := bridge.New(cfg, db, svc)
+		if err := b.Start(context.Background()); err != nil {
+			slog.Error("MQTT bridge 启动失败", "error", err)
+		} else {
+			svc.SetRemotePublisher(b)
+		}
+	}
 	if _, err := cronSchedule.AddFunc("10 0 * * *", func() {
 		if err := svc.AggregateDailyMetrics(context.Background(), time.Now().AddDate(0, 0, -1).Format("2006-01-02")); err != nil {
 			slog.Warn("日聚合失败", "error", err)

@@ -34,6 +34,7 @@ func (a *API) registerTrustRoutes(r *gin.Engine) {
 		g.POST("/build-jobs", a.trustCreateBuildJob)
 		g.GET("/build-jobs/:id", a.trustBuildJobDetail)
 		g.POST("/build-jobs/:id/retry", a.trustBuildJobRetry)
+		a.registerScanRoutes(g)
 	}
 }
 

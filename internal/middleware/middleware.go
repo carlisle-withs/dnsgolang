@@ -113,6 +113,10 @@ func isWhitelisted(c *gin.Context) bool {
 	if path == "/api/netprobe/tasks" && c.Request.Method == http.MethodPost {
 		return true
 	}
+	// 探针注册:以 X-Probe-Token/mTLS 自鉴权,不走 JWT
+	if path == "/api/probe-agents/register" && c.Request.Method == http.MethodPost {
+		return true
+	}
 	return false
 }
 
