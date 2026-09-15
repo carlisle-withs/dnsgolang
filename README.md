@@ -12,7 +12,8 @@
 | P2 | DNS 引擎(miekg/dns:EDNS/DNSSEC/UDP-TCP/权威模式/AXFR/泛解析/trace/延迟采样)、单任务创建→异步执行→详情全链路、executions 契约结构 | ✅ |
 | P3 | HTTP(httptrace 四段计时)+ PING(pro-bing 原生 ICMP,特权→非特权降级)+ MTR/Traceroute(exec 系统命令 + 输出解析);五协议 detail 契约字段 | ✅ |
 | P4 | Asynq 队列(default/netprobe)+ 独立 worker 二进制;批量创建(multipart + normalizer)+ goroutine 池执行引擎(256 并发/200 条缓冲落库/stop 语义);批量全套接口(列表/详情/结果分页/单条/停止/重跑);日聚合定时任务 | ✅ |
-| P5-P9 | risk-board、可信库、扫描器、MQTT 探针、报告 | ⬜ |
+| P5 | risk-board 五接口(meta/overview/globe-layers/node-distribution/batch-risk-overview,30s 缓存)+ passive-alerts(preset 演示数据 + 空骨架) | ✅ |
+| P6-P9 | 可信库、扫描器、MQTT 探针、报告 | ⬜ |
 
 ## 快速开始
 
@@ -80,6 +81,16 @@ scripts/loadtest/      压测工具(2.10 口径:创建/执行/吞吐分档)
 - 10k 档创建 ≤1s ✅;结果无丢失(completed==expected==DB 行数)✅;stop 后立即 cancelled ✅
 - worker 内存 ~20MB(红线 ≤512MB)
 - 原版基线:109/s(20 线程池);Go 版批量引擎为原版 **28×**
+
+## P5 验收记录(方案 11.2 #11/#13)
+
+- **KPI 自洽**:totalRiskCount(5) == protocolAnomalyCount(5) + dnsHighConfidenceCount(0);impactedRegionCount 与事件流地区一致;successRate24h 覆盖单目标+批量双源
+- **协议异常判定阈值**(与原版一致):HTTP 失败/5xx→high、延迟≥1500ms→medium;PING 失败→high、丢包≥20%/延迟≥300ms→medium;MTR 未达→high、丢包≥20%/延迟≥500ms→medium;Traceroute 未达→high、跳≥20/延迟≥800ms→medium
+- **DNS 批量结果不产生协议异常事件**(与原版一致,DNS 风险事件流待 P7 扫描器接入)
+- **drilldownUrl**:单次 `/network-probe/result/{id}`、批量 `/network-probe/batch-result/{id}?resultId=&keyword=`
+- **30s 缓存**:冷查询 15ms → 命中 0.4ms
+- **passive-alerts**:`?preset=public` 返回 6 条演示数据(类型/时间线/榜单/分页齐全);无 preset 返回空骨架
+- 已知边界:globe 的 arcs/hotspots 需目标 IP 地理坐标(IP2Location BIN,P9 geoip 接入),当前返回空数组——前端空态渲染正常
 
 ## 契约回归要点(11.5 已落地项)
 

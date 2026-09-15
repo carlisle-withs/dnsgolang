@@ -59,6 +59,7 @@ func (a *API) Router() *gin.Engine {
 		netprobe.GET("/tasks/:id/executions", a.taskExecutions)
 		netprobe.GET("/executions/:id", a.executionDetail)
 		a.registerBatchRoutes(netprobe)
+		a.registerRiskBoardRoutes(netprobe)
 	}
 	return r
 }
